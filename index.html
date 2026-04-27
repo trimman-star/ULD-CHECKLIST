@@ -100,7 +100,8 @@
                 arrowLeft: "M19 12H5 M12 19l-7-7 7-7",
                 info: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01",
                 logOut: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9",
-                download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3"
+                download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+                clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2"
             };
             
             if (name === 'checkCircleSolid') {
@@ -198,7 +199,7 @@
 
                     <main className="max-w-4xl mx-auto p-4 print:p-0">
                         {view === 'dashboard' && <Dashboard flights={flights} setView={setView} setEditingFlight={setEditingFlight} reload={loadFlights} globalData={globalData} setGlobalData={setGlobalData} />}
-                        {view === 'form' && <FlightForm setView={setView} editingFlight={editingFlight} reload={loadFlights} />}
+                        {view === 'form' && <FlightForm setView={setView} editingFlight={editingFlight} reload={loadFlights} flights={flights} />}
                         {view === 'report' && <ReportView flights={flights} user={user} globalData={globalData} />}
                     </main>
                 </div>
@@ -365,8 +366,11 @@
             return '';
         };
 
-        function FlightForm({ setView, editingFlight, reload }) {
+        function FlightForm({ setView, editingFlight, reload, flights }) {
+            const isFirstFlight = flights.length === 0 || (editingFlight && flights.length > 0 && flights[0].id === editingFlight.id);
+
             const [formData, setFormData] = useState(editingFlight || {
+                shift: 'MORNING',
                 date: new Date().toISOString().slice(0, 10),
                 flightNo: 'BS-', station: '', 
                 totalAke: '', totalPmc: '', damagedMajor: '', damagedMinor: '',
@@ -388,6 +392,7 @@
             const setVal = (k, v) => setFormData(p => ({...p, [k]: v}));
 
             const save = async () => {
+                if (isFirstFlight && !formData.shift) return setAlertMsg("SHIFT");
                 if (!formData.date) return setAlertMsg("DATE");
                 if (!formData.flightNo || formData.flightNo === 'BS-') return setAlertMsg("FLIGHT NO");
                 if (!formData.station) return setAlertMsg("STATION");
@@ -416,7 +421,16 @@
                         </div>
                     )}
 
-                    <div className="bg-white p-4 rounded-xl shadow border grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className={`bg-white p-4 rounded-xl shadow border grid grid-cols-1 ${isFirstFlight ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-4`}>
+                        {isFirstFlight && (
+                            <div>
+                                <label className="text-xs font-black text-gray-500">SHIFT</label>
+                                <select value={formData.shift || 'MORNING'} onChange={e=>setVal('shift', e.target.value)} className="w-full p-2 border rounded font-black uppercase bg-white">
+                                    <option value="MORNING">MORNING</option>
+                                    <option value="EVENING">EVENING</option>
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="text-xs font-black text-gray-500">DATE</label>
                             <input type="date" value={formData.date} onChange={e=>setVal('date', e.target.value)} className="w-full p-2 border rounded font-black uppercase"/>
@@ -469,6 +483,8 @@
         // 7. FINAL REPORT & EXPORT (Fixed A4 Portrait Dimensions & Fonts)
         // ==========================================
         function ReportView({ flights, user, globalData }) {
+            const shift = flights.length > 0 ? (flights[0].shift || 'MORNING') : 'MORNING';
+
             const totals = flights.reduce((acc, f) => {
                 const uldAke = parseInt(f.totalAke)||0;
                 const uldPmc = parseInt(f.totalPmc)||0;
@@ -545,30 +561,36 @@
                                 </div>
                             </div>
                             
-                            <h2 className="text-3xl font-oswald text-[#1e3a8a] uppercase tracking-wide text-center flex-1">
+                            <h2 className="text-3xl font-oswald text-black uppercase tracking-wide text-center flex-1">
                                 DAILY ULD CHECKLIST REPORT
                             </h2>
                             
                             <div className="w-1/4"></div>
                         </div>
 
-                        {/* 2. USER INFO BAR (3 Columns) */}
-                        <div className="flex justify-between border-t border-b border-sky-300 py-3 mb-6 px-4 bg-sky-100/50">
-                            <div className="text-center w-1/3 border-r border-sky-300">
-                                <p className="text-[10px] text-[#1e3a8a] font-bold mb-1 uppercase tracking-wide">ULD CONTROLLER</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-gray-800">
+                        {/* 2. USER INFO BAR (4 Columns, Highlighted) */}
+                        <div className="flex justify-between items-center border-2 border-[#1e3a8a] py-3 mb-6 px-4 bg-[#e0f2fe] rounded-xl shadow-md font-black">
+                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
+                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">SHIFT</p>
+                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
+                                    <Icon name="clock" size={14} color="#1e3a8a"/> {shift}
+                                </p>
+                            </div>
+                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
+                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">ULD CONTROLLER</p>
+                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
                                     <Icon name="user" size={14} color="#1e3a8a"/> {user.name}
                                 </p>
                             </div>
-                            <div className="text-center w-1/3 border-r border-sky-300">
-                                <p className="text-[10px] text-[#1e3a8a] font-bold mb-1 uppercase tracking-wide">USBA ID</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-gray-800">
+                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
+                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">USBA ID</p>
+                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
                                     <Icon name="idCard" size={14} color="#1e3a8a"/> {user.id}
                                 </p>
                             </div>
-                            <div className="text-center w-1/3">
-                                <p className="text-[10px] text-[#1e3a8a] font-bold mb-1 uppercase tracking-wide">DATE</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm font-bold text-gray-800">
+                            <div className="text-center w-1/4">
+                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">DATE</p>
+                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
                                     <Icon name="calendar" size={14} color="#1e3a8a"/> {dateStr}
                                 </p>
                             </div>
@@ -649,21 +671,21 @@
                             <div className="border-2 border-sky-200 rounded-lg overflow-hidden bg-white">
                                 <table className="w-full text-sm text-center border-collapse">
                                     <thead>
-                                        <tr className="bg-sky-50 border-b border-sky-200 text-[#1e3a8a] text-[11px] uppercase">
-                                            <th className="py-2.5 px-2 font-bold w-12 border-r border-sky-200">SL NO</th>
-                                            <th className="py-2.5 px-4 font-bold text-left border-r border-sky-200">JOB DESCRIPTION</th>
+                                        <tr className="bg-sky-50 border-b border-sky-200 text-[#1e3a8a] text-[12px] font-black uppercase">
+                                            <th className="py-2.5 px-2 font-black text-[13px] w-14 border-r border-sky-200">SL NO</th>
+                                            <th className="py-2.5 px-4 font-black text-[13px] text-left border-r border-sky-200">JOB DESCRIPTION</th>
                                             {flights.map(f => (
-                                                <th key={f.id} className="py-2.5 px-2 font-bold border-r border-sky-200 leading-tight">
-                                                    {f.station} <br/><span className="text-[9px] font-bold text-gray-600">({f.flightNo})</span>
+                                                <th key={f.id} className="py-2.5 px-2 font-black border-r border-sky-200 leading-tight text-[12px]">
+                                                    {f.station} <br/><span className="text-[11px] font-black text-gray-800">({f.flightNo})</span>
                                                 </th>
                                             ))}
-                                            <th className="py-2.5 px-4 font-bold">REMARKS</th>
+                                            <th className="py-2.5 px-4 font-black text-[13px]">REMARKS</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {checklistRows.map((row, idx) => (
                                             <tr key={idx} className="border-b border-sky-100 last:border-0 hover:bg-sky-50/50">
-                                                <td className="py-2.5 px-2 font-bold text-[#1e3a8a] border-r border-sky-100">{row.sl}</td>
+                                                <td className="py-2.5 px-2 font-black text-[14px] text-[#1e3a8a] border-r border-sky-100">{row.sl}</td>
                                                 <td className="py-2.5 px-4 text-left font-bold text-[#1e3a8a] border-r border-sky-100">{row.label}</td>
                                                 {flights.map(f => (
                                                     <td key={f.id} className="py-2.5 px-2 border-r border-sky-100 font-bold text-gray-800">
