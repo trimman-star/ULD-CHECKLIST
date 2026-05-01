@@ -551,7 +551,7 @@
                     {/* Fixed Dimensions for A4 Layout Export: 794px by 1123px */}
                     <div id="capture-report" style={{ width: '794px', minHeight: '1123px', backgroundColor: '#e0f2fe', padding: '30px', margin: '0 auto', display: 'flex', flexDirection: 'column' }} className="shadow-lg border border-sky-200 text-gray-800 font-bold">
                         
-                        {/* 1. Header with Logo, Title */}
+                        {/* 1. SKY BLUE HEADER */}
                         <div className="flex justify-between items-center mb-6 pt-2">
                             <div className="flex items-center gap-2 text-[#1e3a8a] w-1/4">
                                 <Icon name="plane" size={32} color="#1e3a8a" />
@@ -561,37 +561,37 @@
                                 </div>
                             </div>
                             
-                            <h2 className="text-3xl font-oswald text-black uppercase tracking-wide text-center flex-1">
-                                DAILY ULD CHECKLIST REPORT
+                            <h2 className="text-4xl font-oswald text-black uppercase tracking-wide text-center flex-1 leading-tight">
+                                DAILY ULD STATUS<br/>(CHECKLIST)
                             </h2>
                             
                             <div className="w-1/4"></div>
                         </div>
 
-                        {/* 2. USER INFO BAR (4 Columns, Highlighted) */}
-                        <div className="flex justify-between items-center border-2 border-[#1e3a8a] py-3 mb-6 px-4 bg-[#e0f2fe] rounded-xl shadow-md font-black">
-                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
-                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">SHIFT</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
-                                    <Icon name="clock" size={14} color="#1e3a8a"/> {shift}
+                        {/* 2. USER INFO BAR (4 Columns, Bold Highlighted White Bar) */}
+                        <div className="flex justify-between items-center border-2 border-[#1e3a8a] py-4 mb-6 px-4 bg-white rounded-xl shadow-md font-black">
+                            <div className="text-center w-1/4 border-r-2 border-[#1e3a8a]/20">
+                                <p className="text-xs text-[#1e3a8a] mb-1 uppercase tracking-widest font-black">SHIFT</p>
+                                <p className="flex items-center justify-center gap-1.5 text-lg text-gray-900 font-black">
+                                    <Icon name="clock" size={18} color="#1e3a8a"/> {shift}
                                 </p>
                             </div>
-                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
-                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">ULD CONTROLLER</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
-                                    <Icon name="user" size={14} color="#1e3a8a"/> {user.name}
+                            <div className="text-center w-1/4 border-r-2 border-[#1e3a8a]/20">
+                                <p className="text-xs text-[#1e3a8a] mb-1 uppercase tracking-widest font-black">ULD CONTROLLER</p>
+                                <p className="flex items-center justify-center gap-1.5 text-lg text-gray-900 font-black">
+                                    <Icon name="user" size={18} color="#1e3a8a"/> {user.name}
                                 </p>
                             </div>
-                            <div className="text-center w-1/4 border-r border-[#1e3a8a]/20">
-                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">USBA ID</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
-                                    <Icon name="idCard" size={14} color="#1e3a8a"/> {user.id}
+                            <div className="text-center w-1/4 border-r-2 border-[#1e3a8a]/20">
+                                <p className="text-xs text-[#1e3a8a] mb-1 uppercase tracking-widest font-black">USBA ID</p>
+                                <p className="flex items-center justify-center gap-1.5 text-lg text-gray-900 font-black">
+                                    <Icon name="idCard" size={18} color="#1e3a8a"/> {user.id}
                                 </p>
                             </div>
                             <div className="text-center w-1/4">
-                                <p className="text-[10px] text-[#1e3a8a] mb-1 uppercase tracking-wide">DATE</p>
-                                <p className="flex items-center justify-center gap-1.5 text-sm text-gray-900">
-                                    <Icon name="calendar" size={14} color="#1e3a8a"/> {dateStr}
+                                <p className="text-xs text-[#1e3a8a] mb-1 uppercase tracking-widest font-black">DATE</p>
+                                <p className="flex items-center justify-center gap-1.5 text-lg text-gray-900 font-black">
+                                    <Icon name="calendar" size={18} color="#1e3a8a"/> {dateStr}
                                 </p>
                             </div>
                         </div>
@@ -672,11 +672,11 @@
                                 <table className="w-full text-sm text-center border-collapse">
                                     <thead>
                                         <tr className="bg-sky-50 border-b border-sky-200 text-[#1e3a8a] text-[12px] font-black uppercase">
-                                            <th className="py-2.5 px-2 font-black text-[13px] w-14 border-r border-sky-200">SL NO</th>
+                                            <th className="py-2.5 px-2 font-black text-[15px] w-14 border-r border-sky-200">SL NO</th>
                                             <th className="py-2.5 px-4 font-black text-[13px] text-left border-r border-sky-200">JOB DESCRIPTION</th>
                                             {flights.map(f => (
-                                                <th key={f.id} className="py-2.5 px-2 font-black border-r border-sky-200 leading-tight text-[12px]">
-                                                    {f.station} <br/><span className="text-[11px] font-black text-gray-800">({f.flightNo})</span>
+                                                <th key={f.id} className="py-2.5 px-2 font-black border-r border-sky-200 leading-tight text-[13px]">
+                                                    {f.station} <br/><span className="text-[12px] font-black text-gray-800">({f.flightNo})</span>
                                                 </th>
                                             ))}
                                             <th className="py-2.5 px-4 font-black text-[13px]">REMARKS</th>
@@ -685,7 +685,7 @@
                                     <tbody>
                                         {checklistRows.map((row, idx) => (
                                             <tr key={idx} className="border-b border-sky-100 last:border-0 hover:bg-sky-50/50">
-                                                <td className="py-2.5 px-2 font-black text-[14px] text-[#1e3a8a] border-r border-sky-100">{row.sl}</td>
+                                                <td className="py-2.5 px-2 font-black text-[16px] text-[#1e3a8a] border-r border-sky-100">{row.sl}</td>
                                                 <td className="py-2.5 px-4 text-left font-bold text-[#1e3a8a] border-r border-sky-100">{row.label}</td>
                                                 {flights.map(f => (
                                                     <td key={f.id} className="py-2.5 px-2 border-r border-sky-100 font-bold text-gray-800">
