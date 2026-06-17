@@ -13,15 +13,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=700&family=Roboto+Condensed:wght=700&display=swap" rel="stylesheet">
     
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- React & ReactDOM (Using stable cdnjs for higher uptime) -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Babel Standalone (Using stable cdnjs) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
-    <!-- Dexie.js (Database) -->
-    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+    <!-- Dexie.js Database (Using stable cdnjs) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js"></script>
 
     <!-- html2canvas for HD JPG Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -102,7 +102,7 @@
         };
 
         // ==========================================
-        // 1. DATABASE
+        // 1. DATABASE (With Graceful Fallback)
         // ==========================================
         const db = new Dexie('USBA_ULD_DB_V2');
         db.version(1).stores({ flights: '++id, flightNo, station, date' });
@@ -177,9 +177,11 @@
 
             const loadFlights = async () => { 
                 try {
-                    setFlights(await db.flights.toArray()); 
+                    if (db && db.flights) {
+                        setFlights(await db.flights.toArray()); 
+                    }
                 } catch(e) {
-                    console.error("Could not load flights:", e);
+                    console.error("Could not load flights from Database:", e);
                 }
             };
 
@@ -212,9 +214,11 @@
             const handleLogout = async () => {
                 if(window.confirm("WARNING: THIS WILL ERASE ALL SAVED FLIGHT DATA. CONTINUE?")) {
                     try {
-                        await db.flights.clear();
+                        if (db && db.flights) {
+                            await db.flights.clear();
+                        }
                     } catch(e) {
-                        console.error("Could not clear IndexedDB tables:", e);
+                        console.error("Could not clear Database tables:", e);
                     }
                     safeStorage.clear();
                     setUser({name:'', id:''});
@@ -316,10 +320,12 @@
             const deleteFlight = async (id) => {
                 if (window.confirm("DELETE THIS FLIGHT RECORD?")) { 
                     try {
-                        await db.flights.delete(id); 
-                        reload(); 
+                        if (db && db.flights) {
+                            await db.flights.delete(id); 
+                            reload(); 
+                        }
                     } catch(e) {
-                        console.error("Failed to delete from IndexedDB:", e);
+                        console.error("Failed to delete from Database:", e);
                     }
                 }
             };
@@ -470,8 +476,10 @@
                 if (formData.damagedMinor === '') return setAlertMsg("DAMAGED MINOR");
 
                 try {
-                    if (formData.id) await db.flights.put(formData);
-                    else await db.flights.add(formData);
+                    if (db && db.flights) {
+                        if (formData.id) await db.flights.put(formData);
+                        else await db.flights.add(formData);
+                    }
                     reload(); setView('dashboard');
                 } catch (e) { alert("ERROR SAVING"); }
             };
