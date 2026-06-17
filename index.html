@@ -74,10 +74,41 @@
         const { useState, useEffect } = React;
 
         // ==========================================
+        // 0. SAFE STORAGE HELPER (Prevents crashes in incognito/restricted browsers)
+        // ==========================================
+        const safeStorage = {
+            getItem: (key) => {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    console.warn("Storage access restricted:", e);
+                    return null;
+                }
+            },
+            setItem: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.warn("Failed to write to storage:", e);
+                }
+            },
+            clear: () => {
+                try {
+                    localStorage.clear();
+                } catch (e) {
+                    console.warn("Failed to clear storage:", e);
+                }
+            }
+        };
+
+        // ==========================================
         // 1. DATABASE
         // ==========================================
         const db = new Dexie('USBA_ULD_DB_V2');
         db.version(1).stores({ flights: '++id, flightNo, station, date' });
+        db.open().catch((err) => {
+            console.error("Failed to open local database:", err);
+        });
 
         // ==========================================
         // 2. ICON SYSTEM
@@ -101,7 +132,8 @@
                 info: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01",
                 logOut: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9",
                 download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
-                clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2"
+                clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2",
+                pin: "M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
             };
             
             if (name === 'checkCircleSolid') {
@@ -137,35 +169,54 @@
             const [editingFlight, setEditingFlight] = useState(null);
             
             const [globalData, setGlobalData] = useState({
-                dacAke: localStorage.getItem('dacAke') || '',
-                dacPmc: localStorage.getItem('dacPmc') || '',
-                maintenance: localStorage.getItem('maintenance') || '',
-                globalNotes: localStorage.getItem('globalNotes') || ''
+                dacAke: safeStorage.getItem('dacAke') || '',
+                dacPmc: safeStorage.getItem('dacPmc') || '',
+                maintenance: safeStorage.getItem('maintenance') || '',
+                globalNotes: safeStorage.getItem('globalNotes') || ''
             });
 
-            const loadFlights = async () => { setFlights(await db.flights.toArray()); };
+            const loadFlights = async () => { 
+                try {
+                    setFlights(await db.flights.toArray()); 
+                } catch(e) {
+                    console.error("Could not load flights:", e);
+                }
+            };
 
             useEffect(() => {
                 loadFlights();
-                const savedUser = localStorage.getItem('usbaUser');
-                if (savedUser) setUser(JSON.parse(savedUser));
+                const savedUser = safeStorage.getItem('usbaUser');
+                if (savedUser) {
+                    try {
+                        setUser(JSON.parse(savedUser));
+                    } catch (e) {
+                        console.error("Error parsing user profile:", e);
+                    }
+                }
 
                 if (view === 'splash') {
-                    setTimeout(() => { setView(savedUser ? 'dashboard' : 'login'); }, 2000);
+                    setTimeout(() => { 
+                        const userCheck = safeStorage.getItem('usbaUser');
+                        setView(userCheck ? 'dashboard' : 'login'); 
+                    }, 2000);
                 }
             }, [view]);
 
             useEffect(() => {
-                localStorage.setItem('dacAke', globalData.dacAke);
-                localStorage.setItem('dacPmc', globalData.dacPmc);
-                localStorage.setItem('maintenance', globalData.maintenance);
-                localStorage.setItem('globalNotes', globalData.globalNotes);
+                safeStorage.setItem('dacAke', globalData.dacAke);
+                safeStorage.setItem('dacPmc', globalData.dacPmc);
+                safeStorage.setItem('maintenance', globalData.maintenance);
+                safeStorage.setItem('globalNotes', globalData.globalNotes);
             }, [globalData]);
 
             const handleLogout = async () => {
                 if(window.confirm("WARNING: THIS WILL ERASE ALL SAVED FLIGHT DATA. CONTINUE?")) {
-                    await db.flights.clear();
-                    localStorage.clear();
+                    try {
+                        await db.flights.clear();
+                    } catch(e) {
+                        console.error("Could not clear IndexedDB tables:", e);
+                    }
+                    safeStorage.clear();
                     setUser({name:'', id:''});
                     setGlobalData({dacAke:'', dacPmc:'', maintenance:'', globalNotes:''});
                     setFlights([]);
@@ -227,7 +278,7 @@
                 e.preventDefault();
                 if(!name || !idNo) return alert("PLEASE FILL BOTH FIELDS");
                 const userData = { name: name.toUpperCase(), id: idNo.toUpperCase() };
-                localStorage.setItem('usbaUser', JSON.stringify(userData));
+                safeStorage.setItem('usbaUser', JSON.stringify(userData));
                 setUser(userData);
                 setView('dashboard');
             };
@@ -263,7 +314,14 @@
             const [alertMsg, setAlertMsg] = useState('');
 
             const deleteFlight = async (id) => {
-                if (window.confirm("DELETE THIS FLIGHT RECORD?")) { await db.flights.delete(id); reload(); }
+                if (window.confirm("DELETE THIS FLIGHT RECORD?")) { 
+                    try {
+                        await db.flights.delete(id); 
+                        reload(); 
+                    } catch(e) {
+                        console.error("Failed to delete from IndexedDB:", e);
+                    }
+                }
             };
 
             const setVal = (k, v) => setGlobalData(p => ({...p, [k]: v}));
@@ -367,7 +425,7 @@
         };
 
         function FlightForm({ setView, editingFlight, reload, flights }) {
-            const isFirstFlight = flights.length === 0 || (editingFlight && flights.length > 0 && flights[0].id === editingFlight.id);
+            const isFirstFlight = flights.length === 0 || (editingFlight && flights.length > 0 && flights[0]?.id === editingFlight.id);
 
             const [formData, setFormData] = useState(editingFlight || {
                 shift: 'MORNING',
@@ -388,7 +446,17 @@
                 setFormData({...formData, flightNo: upVal, station: autoStation});
             };
 
-            const toggle = (k) => setFormData(p => ({...p, checklists: {...p.checklists, [k]: !p.checklists[k]}}));
+            const toggle = (key) => {
+                const currentChecklists = formData.checklists || { lir: true, cpm: true, dmgRpt: true, maintRpt: true, sysUpdate: true, physical: true };
+                setFormData(p => ({
+                    ...p, 
+                    checklists: {
+                        ...currentChecklists, 
+                        [key]: !currentChecklists[key]
+                    }
+                }));
+            };
+            
             const setVal = (k, v) => setFormData(p => ({...p, [k]: v}));
 
             const save = async () => {
@@ -407,6 +475,8 @@
                     reload(); setView('dashboard');
                 } catch (e) { alert("ERROR SAVING"); }
             };
+
+            const activeChecklists = formData.checklists || { lir: true, cpm: true, dmgRpt: true, maintRpt: true, sysUpdate: true, physical: true };
 
             return (
                 <div className="space-y-4 pb-24 relative">
@@ -461,8 +531,8 @@
 
                     <div className="bg-white p-4 rounded-xl shadow border grid grid-cols-2 gap-2">
                         {['lir', 'cpm', 'dmgRpt', 'maintRpt', 'sysUpdate', 'physical'].map(key => (
-                            <button key={key} onClick={()=>toggle(key)} className={`p-2 text-sm font-black border rounded transition-colors ${formData.checklists[key] ? 'bg-green-100 text-green-700 border-green-500' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                {key.toUpperCase()} {formData.checklists[key] && '✅'}
+                            <button key={key} onClick={()=>toggle(key)} className={`p-2 text-sm font-black border rounded transition-colors ${activeChecklists[key] ? 'bg-green-100 text-green-700 border-green-500' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                                {key.toUpperCase()} {activeChecklists[key] && '✅'}
                             </button>
                         ))}
                     </div>
@@ -543,7 +613,7 @@
             };
 
             // First Name for Signature
-            const firstName = user.name.trim().split(' ')[0];
+            const firstName = (user.name || '').trim().split(' ')[0];
             const signatureName = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase() : '';
 
             return (
@@ -690,7 +760,7 @@
                                                 {flights.map(f => (
                                                     <td key={f.id} className="py-2.5 px-2 border-r border-sky-100 font-bold text-gray-800">
                                                         {row.type === 'bool' ? (
-                                                            f.checklists[row.key] ? <div className="flex justify-center"><Icon name="checkCircleSolid" size={16} color="#16a34a" /></div> : '-'
+                                                            (f.checklists && f.checklists[row.key]) ? <div className="flex justify-center"><Icon name="checkCircleSolid" size={16} color="#16a34a" /></div> : '-'
                                                         ) : (
                                                             (parseInt(f.totalAke)||0) + (parseInt(f.totalPmc)||0)
                                                         )}
